@@ -163,6 +163,7 @@ freeproc(struct proc *p)
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
+  p->tracemask = 0;
   p->parent = 0;
   p->name[0] = 0;
   p->chan = 0;
@@ -311,6 +312,7 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
+  np->tracemask = p->tracemask;
 
   release(&np->lock);
 
@@ -626,6 +628,19 @@ killed(struct proc *p)
   release(&p->lock);
   return k;
 }
+
+
+// trace syscall
+int
+trace(int syscall_id)
+{
+  struct proc *p = myproc();
+
+  p->tracemask = syscall_id;
+
+  return 0;
+}
+
 
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.
