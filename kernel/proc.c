@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "sysinfo.h"
 
 struct cpu cpus[NCPU];
 
@@ -641,6 +642,22 @@ trace(int syscall_id)
   return 0;
 }
 
+// sysinfo syscall
+int
+sysinfo(uint64 addr)
+{
+  int ret;
+  struct sysinfo info;
+  struct proc *p = myproc();
+
+  info.freemem = nr_freemem();
+  info.nproc = nr_processes();
+
+  ret = copyout(p->pagetable, addr, (char *)&info, sizeof(info));
+
+  return ret < 0 ? -1 : 0;
+}
+
 
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.
@@ -700,4 +717,17 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int
+nr_processes(void) {
+  struct proc *p;
+  int nr_p = 0;
+
+  for(p = proc; p < &proc[NPROC]; p++) {
+      if(p->state != UNUSED)
+        nr_p++;
+  }
+
+  return nr_p;
 }

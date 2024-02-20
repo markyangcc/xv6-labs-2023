@@ -100,3 +100,14 @@ sys_trace(void) {
   trace(syscall_id);
   return 0;
 }
+
+uint64
+sys_sysinfo(void) {
+  uint64 addr;
+  int ret;
+
+  argaddr(0, &addr);
+  ret = sysinfo(addr);
+
+  return ret < 0 ? -1 : 0;
+}
