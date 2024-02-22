@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "sysinfo.h"
 
 struct cpu cpus[NCPU];
 
@@ -163,6 +164,7 @@ freeproc(struct proc *p)
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
+  p->tracemask = 0;
   p->parent = 0;
   p->name[0] = 0;
   p->chan = 0;
@@ -311,6 +313,7 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
+  np->tracemask = p->tracemask;
 
   release(&np->lock);
 
@@ -627,6 +630,35 @@ killed(struct proc *p)
   return k;
 }
 
+
+// trace syscall
+int
+trace(int syscall_id)
+{
+  struct proc *p = myproc();
+
+  p->tracemask = syscall_id;
+
+  return 0;
+}
+
+// sysinfo syscall
+int
+sysinfo(uint64 addr)
+{
+  int ret;
+  struct sysinfo info;
+  struct proc *p = myproc();
+
+  info.freemem = nr_freemem();
+  info.nproc = nr_processes();
+
+  ret = copyout(p->pagetable, addr, (char *)&info, sizeof(info));
+
+  return ret < 0 ? -1 : 0;
+}
+
+
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.
 // Returns 0 on success, -1 on error.
@@ -685,4 +717,17 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int
+nr_processes(void) {
+  struct proc *p;
+  int nr_p = 0;
+
+  for(p = proc; p < &proc[NPROC]; p++) {
+      if(p->state != UNUSED)
+        nr_p++;
+  }
+
+  return nr_p;
 }
