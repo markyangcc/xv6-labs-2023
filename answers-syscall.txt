@@ -1,0 +1,54 @@
+Q1: Looking at the backtrace output, which function called syscall?
+(gdb) bt
+#0  syscall () at kernel/syscall.c:133
+#1  0x0000000080001d74 in usertrap () at kernel/trap.c:67
+#2  0x0505050505050505 in ?? ()
+
+Q2: What is the value of p->trapframe->a7 and what does that value represent? (Hint: look user/initcode.S, the first user program xv6 starts.)
+(gdb) p p->trapframe->a7
+$4 = 7
+
+p->trapframe->a7 代表系统调用号，从 syscall 源码就能看出来
+
+Q3: What was the previous mode that the CPU was in?
+(gdb)  p /t $sstatus
+$6 = 1000000000000000000000000000100010
+
+user mode, 从 RISC-V 64 Spec 可知，Supervisor Status Register (sstatus) bit 8 SPP 的值代表当前处于什么 mode， SPP 为 0 代表 user mode，SPP 为 1 代表 supervisor mode。
+
+
+Q4: Write down the assembly instruction the kernel is panicing at. Which register corresponds to the variable num?
+qemu:
+scause 0x000000000000000d
+sepc=0x0000000080002054 stval=0x0000000000000000
+panic: kerneltrap
+
+kernel/kernel.asm:
+num = * (int *) 0;
+  80002054:	00002683          	lw	a3,0(zero) # 0 <_entry-0x80000000>
+
+panic 时正在执行 lw	a3,0(zero) 指令，此时 a3 寄存器存的是 num。
+
+Q5: Why does the kernel crash? Hint: look at figure 3-3 in the text; is address 0 mapped in the kernel address space? Is that confirmed by the value in scause above? (See description of scause in RISC-V privileged instructions)
+正常情况下，
+(gdb) n
+137	  num = p->trapframe->a7;
+(gdb) p &(p->trapframe->a7)
+$2 = (uint64 *) 0x87f740a8
+
+异常情况下，
+(gdb) n
+137	  num = * (int *) 0;
+(gdb) p &(* (int *) 0)
+$1 = (int *) 0x0
+
+我们将地址 0 处的值赋给 num，地址 0 处并不是内核地址。scause 值为 0x000000000000000d，10 进制为 13，代表 Load page fault. 变相验证了。
+
+
+Q6: What is the name of the binary that was running when the kernel paniced? What is its process id (pid)?
+(gdb) p p->name
+$1 = "initcode\000\000\000\000\000\000\000"
+(gdb) p p->pid
+$2 = 1
+
+name 为 initcode， pid 为 1
