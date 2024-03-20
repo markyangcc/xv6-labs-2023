@@ -1,0 +1,39 @@
+Q: Which other xv6 system call(s) could be made faster using this shared page? Explain how.
+
+A: 我觉得任意 syscall 都能加速，只要把 syscall 需要的数据结构成员放到 `struct usyscall` 这个页里，用户态访问就能直接从映射的页读取，不用进入内核态。
+   加速时间挺好的。
+
+
+
+Q: For every leaf page in the vmprint output, explain what it logically contains and what its permission bits are.
+   Figure 3.4 in the xv6 book might be helpful, although note that the figure might have a slightly different set of pages than the init process that's being inspected here.
+
+A:
+
+page table 0x0000000087f6b000
+..0: pte 0x0000000021fd9c01 pa 0x0000000087f67000
+....0: pte 0x0000000021fd9801 pa 0x0000000087f66000
+......0: pte 0x0000000021fda01b pa 0x0000000087f68000
+......1: pte 0x0000000021fd9417 pa 0x0000000087f65000
+......2: pte 0x0000000021fd9007 pa 0x0000000087f64000
+......3: pte 0x0000000021fd8c17 pa 0x0000000087f63000
+..255: pte 0x0000000021fda801 pa 0x0000000087f6a000
+....511: pte 0x0000000021fda401 pa 0x0000000087f69000
+......509: pte 0x0000000021fdcc13 pa 0x0000000087f73000
+......510: pte 0x0000000021fdd007 pa 0x0000000087f74000
+......511: pte 0x0000000020001c0b pa 0x0000000080007000
+init: starting sh
+
+| pte                | bits                           | R | W | X |
+|--------------------|--------------------------------|---|---|---|
+| 0x0000000021fda01b | 100001111111011010000000011011 | Y | N | Y |
+| 0x0000000021fd9417 | 100001111111011001010000010111 | Y | Y | N |
+| 0x0000000021fd9007 | 100001111111011001000000000111 | Y | Y | N |
+| 0x0000000021fd8c17 | 100001111111011000110000010111 | Y | Y | N |
+|                    |                                |   |   |   |
+| 0x0000000021fdcc13 | 100001111111011100110000010011 | Y | N | N |
+| 0x0000000021fdd007 | 100001111111011101000000000111 | Y | Y | N |
+
+xv6-book 里 `Figure 3.2: RISC-V address translation details` 有 pte 的具体 bit 代表的含义。
+
+R/W/X 分别对应 pte 的 bit 1/2/3。
