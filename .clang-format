@@ -1,0 +1,15 @@
+BasedOnStyle: LLVM
+SortIncludes: Never
+
+BreakBeforeBraces: Stroustrup
+
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: true
+
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: All
+
+# clang-format can only control before side, it should control a pair of these(before and after)
+# Only control before side space is ugly in xv6, so let it go
+# SpaceBeforeParens: Never
