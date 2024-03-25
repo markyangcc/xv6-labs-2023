@@ -188,6 +188,27 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_sleep\
+	$U/_pingpong\
+	$U/_primes\
+	$U/_find\
+	$U/_xargs\
+	$U/_trace\
+	$U/_sysinfotest\
+
+
+
+
+ifeq ($(LAB),$(filter $(LAB), lock))
+UPROGS += \
+	$U/_stats
+endif
+
+ifeq ($(LAB),traps)
+UPROGS += \
+	$U/_call\
+	$U/_bttest
+endif
 
 
 
@@ -271,6 +292,11 @@ clean:
 	$U/initcode $U/initcode.out $K/kernel $U/usys.S \
 	mkfs/mkfs fs.img .gdbinit \
 	$(UPROGS) \
+	$U/initcode $U/initcode.out $K/kernel fs.img \
+	mkfs/mkfs .gdbinit \
+        $U/usys.S \
+	$(UPROGS) \
+	*.zip \
 	ph barrier
 
 # try to generate a unique GDB port
@@ -338,6 +364,7 @@ grade:
 
 format:
 	find . -regex '.*\.\(c\|h\)' -exec clang-format -style=file -i {} \;
+
 
 ##
 ## FOR submissions
