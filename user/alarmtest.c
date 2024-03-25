@@ -49,22 +49,24 @@ test0()
   printf("test0 start\n");
   count = 0;
   sigalarm(2, periodic);
-  for(i = 0; i < 1000*500000; i++){
-    if((i % 1000000) == 0)
+  for (i = 0; i < 1000 * 500000; i++) {
+    if ((i % 1000000) == 0)
       write(2, ".", 1);
-    if(count > 0)
+    if (count > 0)
       break;
   }
   sigalarm(0, 0);
-  if(count > 0){
+  if (count > 0) {
     printf("test0 passed\n");
-  } else {
+  }
+  else {
     printf("\ntest0 failed: the kernel never called the alarm handler\n");
   }
 }
 
-void __attribute__ ((noinline)) foo(int i, int *j) {
-  if((i % 2500000) == 0) {
+void __attribute__((noinline)) foo(int i, int *j)
+{
+  if ((i % 2500000) == 0) {
     write(2, ".", 1);
   }
   *j += 1;
@@ -88,14 +90,15 @@ test1()
   count = 0;
   j = 0;
   sigalarm(2, periodic);
-  for(i = 0; i < 500000000; i++){
-    if(count >= 10)
+  for (i = 0; i < 500000000; i++) {
+    if (count >= 10)
       break;
     foo(i, &j);
   }
-  if(count < 10){
+  if (count < 10) {
     printf("\ntest1 failed: too few calls to the handler\n");
-  } else if(i != j){
+  }
+  else if (i != j) {
     // the loop should have called foo() i times, and foo() should
     // have incremented j once per call, so j should equal i.
     // once possible source of errors is that the handler may
@@ -104,7 +107,8 @@ test1()
     // restored correctly, causing i or j or the address ofj
     // to get an incorrect value.
     printf("\ntest1 failed: foo() executed fewer times than it was called\n");
-  } else {
+  }
+  else {
     printf("test1 passed\n");
   }
 }
@@ -125,10 +129,10 @@ test2()
   if (pid == 0) {
     count = 0;
     sigalarm(2, slow_handler);
-    for(i = 0; i < 1000*500000; i++){
-      if((i % 1000000) == 0)
+    for (i = 0; i < 1000 * 500000; i++) {
+      if ((i % 1000000) == 0)
         write(2, ".", 1);
-      if(count > 0)
+      if (count > 0)
         break;
     }
     if (count == 0) {
@@ -152,7 +156,7 @@ slow_handler()
     printf("test2 failed: alarm handler called more than once\n");
     exit(1);
   }
-  for (int i = 0; i < 1000*500000; i++) {
+  for (int i = 0; i < 1000 * 500000; i++) {
     asm volatile("nop"); // avoid compiler optimizing away loop
   }
   sigalarm(0, 0);
@@ -182,11 +186,11 @@ test3()
 
   asm volatile("lui a5, 0");
   asm volatile("addi a0, a5, 0xac" : : : "a0");
-  for(int i = 0; i < 500000000; i++)
+  for (int i = 0; i < 500000000; i++)
     ;
-  asm volatile("mv %0, a0" : "=r" (a0) );
+  asm volatile("mv %0, a0" : "=r"(a0));
 
-  if(a0 != 0xac)
+  if (a0 != 0xac)
     printf("test3 failed: register a0 changed\n");
   else
     printf("test3 passed\n");
