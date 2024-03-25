@@ -336,6 +336,9 @@ grade:
           (echo "'make clean' failed.  HINT: Do you have another running instance of xv6?" && exit 1)
 	./grade-lab-$(LAB) $(GRADEFLAGS)
 
+format:
+	find . -regex '.*\.\(c\|h\)' -exec clang-format -style=file -i {} \;
+
 ##
 ## FOR submissions
 ##
