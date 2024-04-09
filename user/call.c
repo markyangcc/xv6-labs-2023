@@ -18,6 +18,6 @@ f(int x)
 void
 main(void)
 {
-  printf("%d %d\n", f(8) + 1, 13);
+  printf("x=%d y=%d", 3);
   exit(0);
 }
