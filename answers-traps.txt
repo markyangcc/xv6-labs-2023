@@ -1,0 +1,56 @@
+# Which registers contain arguments to functions? For example, which register holds 13 in main's call to printf?
+
+  printf("%d %d\n", f(8) + 1, 13);
+  24:	4635                	li	a2,13
+  26:	45b1                	li	a1,12
+
+a1,a2 分别存放第一个参数和第二个参数
+
+# Where is the call to function f in the assembly code for main? Where is the call to g? (Hint: the compiler may inline functions.)
+000000000000000e <f>
+0000000000000000 <g>
+
+# At what address is the function printf located?
+0000000000000630 <printf>
+
+# What value is in the register ra just after the jalr to printf in main?
+0x38
+
+# Run the following code.
+
+	unsigned int i = 0x00646c72;
+	printf("H%x Wo%s", 57616, &i);
+      
+What is the output? Here's an ASCII table that maps bytes to characters.
+The output depends on that fact that the RISC-V is little-endian. If the RISC-V were instead big-endian what would you set i to in order to yield the same output? Would you need to change 57616 to a different value?
+
+$ call
+HE110 World$ 
+
+输出是 “HE110 World”
+如果是大段序，i = 0x726c64
+
+下面解释输出为什么是 E110， rld，
+
+为什么是 rld?
+16 进制字符是 2 组 2 组一读，根据链接里的对照表，我们将 0x00646c72 翻译为 dlr,
+因为是小端，所以时间上 CPU 从小端往大端读，也就是 rld.
+00 -> null
+64 -> 'd'
+6c -> 'l'
+72 -> 'r'
+
+为什么是 E110?
+$ python3
+>>> hex(57616)
+'0xe110'
+
+
+# In the following code, what is going to be printed after 'y='? (note: the answer is not a specific value.) Why does this happen?
+
+	printf("x=%d y=%d", 3);
+
+$ call
+x=3 y=8229$ 
+
+打印的是 a2 寄存器的值。
