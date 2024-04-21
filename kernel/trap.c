@@ -79,8 +79,19 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if (which_dev == 2)
+  if (which_dev == 2) {
+
+    // stop generating periodic alarm calls if threshold is 0
+    if (p->alarm_threshold != 0) {
+      p->alarm_passed++;
+
+      if (p->alarm_passed == p->alarm_threshold) {
+        *(p->alarm_prev_trapframe) = *(p->trapframe);
+        p->trapframe->epc = p->alarm_handler;
+      }
+    }
     yield();
+  }
 
   usertrapret();
 }
