@@ -223,3 +223,19 @@ devintr()
     return 0;
   }
 }
+
+void
+backtrace()
+{
+  uint64 retaddr;
+  uint64 fp = r_fp();
+  uint64 top = PGROUNDUP(fp);
+
+  printf("backtrace:\n");
+  while (fp < top) {
+    retaddr = *(uint64 *)(fp - 8);
+    printf("%p\n", retaddr);
+
+    fp = *(uint64 *)(fp - 16);
+  }
+}
