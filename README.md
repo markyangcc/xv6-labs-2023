@@ -6,5 +6,5 @@ Impl xv6 kernel
 - [x] [syscall](https://github.com/markyangcc/xv6-labs-2023/commits/syscall/)
 - [x] [traps](https://github.com/markyangcc/xv6-labs-2023/commits/traps/)
 - [x] [cow](https://github.com/markyangcc/xv6-labs-2023/commits/cow/)
-- [] [thread](https://github.com/markyangcc/xv6-labs-2023/commits/thread/)
+- [ ] [thread](https://github.com/markyangcc/xv6-labs-2023/commits/thread/)
 
