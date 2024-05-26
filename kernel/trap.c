@@ -65,8 +65,16 @@ usertrap(void)
     intr_on();
 
     syscall();
-  }
-  else if ((which_dev = devintr()) != 0) {
+  } else if(r_scause() == 15) { // 写页面错
+    uint64 va0 = r_stval();
+    if(va0 > p->sz) {
+      p->killed = 1;
+    } else if(cowhandler(p->pagetable,va0) !=0 ) {
+      p->killed = 1;
+    } else if(va0 < PGSIZE) {
+      p->killed = 1;
+    }
+  } else if((which_dev = devintr()) != 0){
     // ok
   }
   else {
@@ -223,3 +231,38 @@ devintr()
     return 0;
   }
 }
+
+int
+cowhandler(pagetable_t pagetable, uint64 va)
+{
+    char *mem;
+    if (va >= MAXVA)
+      return -1;
+    pte_t *pte = walk(pagetable, va, 0);
+    if (pte == 0)
+      return -1;
+    // check the PTE
+    if ((*pte & PTE_COW) == 0 || (*pte & PTE_U) == 0 || (*pte & PTE_V) == 0) {
+      return -1;
+    }
+    uint64 pa = PTE2PA(*pte);
+    char refcnt = get_kmemref((void *)pa);
+    if(refcnt == 1) {
+       *pte = (*pte & (~PTE_COW)) | PTE_W;
+       return 0;
+    }
+    if(refcnt > 1) {
+      if ((mem = kalloc()) == 0) {
+        return -1;
+      }
+      // copy old data to new mem
+      memmove((char*)mem, (char*)pa, PGSIZE);
+      kfree((void*)pa);
+      uint flags = PTE_FLAGS(*pte);
+      *pte = (PA2PTE(mem) | flags | PTE_W);
+      *pte &= ~PTE_COW;
+      return 0;
+    }
+    return -1;
+}
+

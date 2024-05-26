@@ -196,23 +196,6 @@ UPROGS=\
 	$U/_trace\
 	$U/_sysinfotest\
 
-
-
-
-ifeq ($(LAB),$(filter $(LAB), lock))
-UPROGS += \
-	$U/_stats
-endif
-
-ifeq ($(LAB),traps)
-UPROGS += \
-	$U/_call\
-	$U/_bttest
-endif
-
-
-
-
 ifeq ($(LAB),$(filter $(LAB), lock))
 UPROGS += \
 	$U/_stats
@@ -364,7 +347,6 @@ grade:
 
 format:
 	find . -regex '.*\.\(c\|h\)' -exec clang-format -style=file -i {} \;
-
 
 ##
 ## FOR submissions

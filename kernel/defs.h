@@ -66,7 +66,6 @@ void kinit(void);
 void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
-int             nr_freemem(void);
 
 // log.c
 void initlog(int, struct superblock *);
@@ -177,7 +176,6 @@ extern uint ticks;
 void trapinit(void);
 void trapinithart(void);
 extern struct spinlock tickslock;
-void usertrapret(void);
 
 // uart.c
 void uartinit(void);

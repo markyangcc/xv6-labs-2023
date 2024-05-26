@@ -5,7 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
-
+#include "spinlock.h"
+#include "proc.h"
 /*
  * the kernel's page table.
  */
@@ -164,6 +165,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
       return -1;
     if (*pte & PTE_V)
       panic("mappages: remap");
+
     *pte = PA2PTE(pa) | perm | PTE_V;
     if (a == last)
       break;
@@ -319,15 +321,19 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   pte_t *pte;
   uint64 pa, i;
   uint flags;
-  char *mem;
 
   for (i = 0; i < sz; i += PGSIZE) {
     if ((pte = walk(old, i, 0)) == 0)
       panic("uvmcopy: pte should exist");
     if ((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
+
+    if(*pte & PTE_W) {
+      *pte = (*pte & (~PTE_W)) | PTE_COW;
+    }
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
+
     if ((mem = kalloc()) == 0)
       goto err;
     memmove(mem, (char *)pa, PGSIZE);
@@ -335,6 +341,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       kfree(mem);
       goto err;
     }
+    inc_kmemref((void *)pa);
   }
   return 0;
 
@@ -373,14 +380,34 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     if (pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0 ||
         (*pte & PTE_W) == 0)
       return -1;
-    pa0 = PTE2PA(*pte);
+    }
+    if ((va0 < p->sz) && (*pte & PTE_V) &&
+            (*pte & PTE_COW)&&(*pte & PTE_U)) {
+      char refcnt = get_kmemref((void *)pa0);
+      if(refcnt == 1) {
+         *pte = (*pte &(~PTE_COW)) | PTE_W;
+      }else if(refcnt > 1){
+        char *mem;
+        dec_kmemref((void *)pa0);
+        if ((mem = kalloc()) == 0) {
+          p->killed = 1;        
+          return -1;
+        } 
+        memmove(mem, (char*)pa0, PGSIZE);
+        uint flags = PTE_FLAGS(*pte);
+        *pte = (PA2PTE(mem) | flags | PTE_W);
+        *pte &= ~PTE_COW;
+        pa0 = (uint64)mem;
+
+      }
+    }
     n = PGSIZE - (dstva - va0);
     if (n > len)
       n = len;
     memmove((void *)(pa0 + (dstva - va0)), src, n);
 
     len -= n;
-    src += n;
+    src += n; 
     dstva = va0 + PGSIZE;
   }
   return 0;
