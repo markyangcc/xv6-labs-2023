@@ -28,20 +28,15 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)PHYSTOP);
+  freerange(end, (void *)PHYSTOP);
 }
 
 void
 freerange(void *pa_start, void *pa_end)
 {
   char *p;
-  int i;
-  p = (char*)PGROUNDUP((uint64)pa_start);
-  for(i=0; i<(uint64)p/PGSIZE; i++) {
-    kmem.ref_count[i] = 0;
-  }
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE) {
-    kmem.ref_count[(uint64)p/PGSIZE] = 1;
+  p = (char *)PGROUNDUP((uint64)pa_start);
+  for (; p + PGSIZE <= (char *)pa_end; p += PGSIZE)
     kfree(p);
   }
 }
@@ -55,7 +50,7 @@ kfree(void *pa)
 {
   struct run *r;
 
-  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+  if (((uint64)pa % PGSIZE) != 0 || (char *)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
 	if (get_kmemref(pa) > 1) {
@@ -66,7 +61,7 @@ kfree(void *pa)
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
 
-  r = (struct run*)pa;
+  r = (struct run *)pa;
 
   acquire(&kmem.lock);
   r->next = kmem.freelist;
@@ -90,9 +85,22 @@ kalloc(void)
   }   
   release(&kmem.lock);
 
-  if(r)
-    memset((char*)r, 5, PGSIZE); // fill with junk
-  return (void*)r;
+  if (r)
+    memset((char *)r, 5, PGSIZE); // fill with junk
+  return (void *)r;
+}
+
+int
+nr_freemem(void) {
+  struct run *r;
+  uint64 amount = 0;
+  r = kmem.freelist;
+  while(r) {
+    r= r->next;
+    amount +=1;
+  }
+
+  return amount* PGSIZE;
 }
 
 char

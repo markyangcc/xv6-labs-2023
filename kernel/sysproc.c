@@ -1,7 +1,7 @@
 #include "types.h"
 #include "riscv.h"
-#include "defs.h"
 #include "param.h"
+#include "defs.h"
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
@@ -12,7 +12,7 @@ sys_exit(void)
   int n;
   argint(0, &n);
   exit(n);
-  return 0;  // not reached
+  return 0; // not reached
 }
 
 uint64
@@ -43,7 +43,7 @@ sys_sbrk(void)
 
   argint(0, &n);
   addr = myproc()->sz;
-  if(growproc(n) < 0)
+  if (growproc(n) < 0)
     return -1;
   return addr;
 }
@@ -54,13 +54,16 @@ sys_sleep(void)
   int n;
   uint ticks0;
 
+
   argint(0, &n);
-  if(n < 0)
+
+  if (n < 0)
     n = 0;
+
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
-    if(killed(myproc())){
+  while (ticks - ticks0 < n) {
+    if (killed(myproc())) {
       release(&tickslock);
       return -1;
     }
@@ -69,6 +72,41 @@ sys_sleep(void)
   release(&tickslock);
   return 0;
 }
+
+
+#ifdef LAB_PGTBL
+int sys_pgaccess(void) {
+
+	uint64 baseaddr;
+	int upper;
+	uint64 outaddr;
+
+	uint64 va;
+	pte_t *pte;
+	uint64 abits = 0;
+
+	argaddr(0, &baseaddr);
+	argint(1, &upper);
+	argaddr(2, &outaddr);
+
+	struct proc *p = myproc();
+
+	for (int i = 0; i < upper; i++) {
+		va = baseaddr + i * PGSIZE;
+		pte = walk(p->pagetable, va, 0);
+
+		if (*pte & PTE_A) {
+			abits = abits | (1 << i); // set bit
+			*pte = (*pte) & (~PTE_A); // reset PTE_A
+		}
+	}
+
+	if (copyout(p->pagetable, outaddr, (char *)&abits, sizeof(abits)) < 0)
+		return -1;
+
+	return 0;
+}
+#endif
 
 uint64
 sys_kill(void)
@@ -90,4 +128,24 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_trace(void) {
+  int syscall_id;
+
+  argint(0, &syscall_id);
+  trace(syscall_id);
+  return 0;
+}
+
+uint64
+sys_sysinfo(void) {
+  uint64 addr;
+  int ret;
+
+  argaddr(0, &addr);
+  ret = sysinfo(addr);
+
+  return ret < 0 ? -1 : 0;
 }
