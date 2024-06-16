@@ -1,0 +1,11 @@
+BasedOnStyle: LLVM
+SortIncludes: Never
+
+BreakBeforeBraces: Stroustrup
+
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: true
+
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: All
