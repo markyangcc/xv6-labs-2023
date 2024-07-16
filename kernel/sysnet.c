@@ -15,12 +15,12 @@
 #include "net.h"
 
 struct sock {
-  struct sock *next; // the next socket in the list
-  uint32 raddr;      // the remote IPv4 address
-  uint16 lport;      // the local UDP port number
-  uint16 rport;      // the remote UDP port number
+  struct sock *next;    // the next socket in the list
+  uint32 raddr;         // the remote IPv4 address
+  uint16 lport;         // the local UDP port number
+  uint16 rport;         // the remote UDP port number
   struct spinlock lock; // protects the rxq
-  struct mbufq rxq;  // a queue of packets waiting to be received
+  struct mbufq rxq;     // a queue of packets waiting to be received
 };
 
 static struct spinlock lock;
@@ -41,7 +41,7 @@ sockalloc(struct file **f, uint32 raddr, uint16 lport, uint16 rport)
   *f = 0;
   if ((*f = filealloc()) == 0)
     goto bad;
-  if ((si = (struct sock*)kalloc()) == 0)
+  if ((si = (struct sock *)kalloc()) == 0)
     goto bad;
 
   // initialize objects
@@ -59,9 +59,7 @@ sockalloc(struct file **f, uint32 raddr, uint16 lport, uint16 rport)
   acquire(&lock);
   pos = sockets;
   while (pos) {
-    if (pos->raddr == raddr &&
-        pos->lport == lport &&
-	pos->rport == rport) {
+    if (pos->raddr == raddr && pos->lport == lport && pos->rport == rport) {
       release(&lock);
       goto bad;
     }
@@ -74,7 +72,7 @@ sockalloc(struct file **f, uint32 raddr, uint16 lport, uint16 rport)
 
 bad:
   if (si)
-    kfree((char*)si);
+    kfree((char *)si);
   if (*f)
     fileclose(*f);
   return -1;
@@ -90,7 +88,7 @@ sockclose(struct sock *si)
   acquire(&lock);
   pos = &sockets;
   while (*pos) {
-    if (*pos == si){
+    if (*pos == si) {
       *pos = si->next;
       break;
     }
@@ -104,7 +102,7 @@ sockclose(struct sock *si)
     mbuffree(m);
   }
 
-  kfree((char*)si);
+  kfree((char *)si);
 }
 
 int

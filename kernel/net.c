@@ -11,9 +11,10 @@
 #include "net.h"
 #include "defs.h"
 
-static uint32 local_ip = MAKE_IP_ADDR(10, 0, 2, 15); // qemu's idea of the guest IP
-static uint8 local_mac[ETHADDR_LEN] = { 0x52, 0x54, 0x00, 0x12, 0x34, 0x56 };
-static uint8 broadcast_mac[ETHADDR_LEN] = { 0xFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF };
+static uint32 local_ip =
+    MAKE_IP_ADDR(10, 0, 2, 15); // qemu's idea of the guest IP
+static uint8 local_mac[ETHADDR_LEN] = {0x52, 0x54, 0x00, 0x12, 0x34, 0x56};
+static uint8 broadcast_mac[ETHADDR_LEN] = {0xFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF};
 
 // Strips data from the start of the buffer and returns a pointer to it.
 // Returns 0 if less than the full requested length is available.
@@ -66,7 +67,7 @@ struct mbuf *
 mbufalloc(unsigned int headroom)
 {
   struct mbuf *m;
- 
+
   if (headroom > MBUF_SIZE)
     return 0;
   m = kalloc();
@@ -91,7 +92,7 @@ void
 mbufq_pushtail(struct mbufq *q, struct mbuf *m)
 {
   m->next = 0;
-  if (!q->head){
+  if (!q->head) {
     q->head = q->tail = m;
     return;
   }
@@ -139,7 +140,7 @@ in_cksum(const unsigned char *addr, int len)
    * sequential 16 bit words to it, and at the end, fold back all the
    * carry bits from the top 16 bits into the lower 16 bits.
    */
-  while (nleft > 1)  {
+  while (nleft > 1) {
     sum += *w++;
     nleft -= 2;
   }
@@ -200,8 +201,7 @@ net_tx_ip(struct mbuf *m, uint8 proto, uint32 dip)
 
 // sends a UDP packet
 void
-net_tx_udp(struct mbuf *m, uint32 dip,
-           uint16 sport, uint16 dport)
+net_tx_udp(struct mbuf *m, uint32 dip, uint16 sport, uint16 dport)
 {
   struct udp *udphdr;
 
@@ -259,10 +259,8 @@ net_rx_arp(struct mbuf *m)
     goto done;
 
   // validate the ARP header
-  if (ntohs(arphdr->hrd) != ARP_HRD_ETHER ||
-      ntohs(arphdr->pro) != ETHTYPE_IP ||
-      arphdr->hln != ETHADDR_LEN ||
-      arphdr->pln != sizeof(uint32)) {
+  if (ntohs(arphdr->hrd) != ARP_HRD_ETHER || ntohs(arphdr->pro) != ETHTYPE_IP ||
+      arphdr->hln != ETHADDR_LEN || arphdr->pln != sizeof(uint32)) {
     goto done;
   }
 
@@ -274,7 +272,7 @@ net_rx_arp(struct mbuf *m)
 
   // handle the ARP request
   memmove(smac, arphdr->sha, ETHADDR_LEN); // sender's ethernet address
-  sip = ntohl(arphdr->sip); // sender's IP address (qemu's slirp)
+  sip = ntohl(arphdr->sip);                // sender's IP address (qemu's slirp)
   net_tx_arp(ARP_OP_REPLY, smac, sip);
 
 done:
@@ -288,7 +286,6 @@ net_rx_udp(struct mbuf *m, uint16 len, struct ip *iphdr)
   struct udp *udphdr;
   uint32 sip;
   uint16 sport, dport;
-
 
   udphdr = mbufpullhdr(m, *udphdr);
   if (!udphdr)
@@ -325,7 +322,7 @@ net_rx_ip(struct mbuf *m)
 
   iphdr = mbufpullhdr(m, *iphdr);
   if (!iphdr)
-	  goto fail;
+    goto fail;
 
   // check IP version and header len
   if (iphdr->ip_vhl != ((4 << 4) | (20 >> 2)))
@@ -353,7 +350,8 @@ fail:
 
 // called by e1000 driver's interrupt handler to deliver a packet to the
 // networking stack
-void net_rx(struct mbuf *m)
+void
+net_rx(struct mbuf *m)
 {
   struct eth *ethhdr;
   uint16 type;

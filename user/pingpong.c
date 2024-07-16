@@ -6,7 +6,8 @@
 char buf[N];
 
 void
-pong(int *parent_to_child, int *child_to_parent) {
+pong(int *parent_to_child, int *child_to_parent)
+{
   if (read(parent_to_child[0], buf, N) < 0) {
     printf("read failed\n");
   }
@@ -17,8 +18,9 @@ pong(int *parent_to_child, int *child_to_parent) {
 }
 
 void
-ping(int *parent_to_child, int *child_to_parent) {
-  
+ping(int *parent_to_child, int *child_to_parent)
+{
+
   if (write(parent_to_child[1], "ping", 4) != 4) {
     printf("write failed\n");
   }
@@ -44,9 +46,10 @@ main(int argc, char *argv[])
   }
   if (pid == 0) {
     pong(parent_to_child, child_to_parent);
-  } else {
+  }
+  else {
     ping(parent_to_child, child_to_parent);
   }
-  
+
   exit(0);
 }

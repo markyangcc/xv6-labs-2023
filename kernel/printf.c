@@ -32,7 +32,7 @@ printint(int xx, int base, int sign)
   int i;
   uint x;
 
-  if(sign && (sign = xx < 0))
+  if (sign && (sign = xx < 0))
     x = -xx;
   else
     x = xx;
@@ -40,12 +40,12 @@ printint(int xx, int base, int sign)
   i = 0;
   do {
     buf[i++] = digits[x % base];
-  } while((x /= base) != 0);
+  } while ((x /= base) != 0);
 
-  if(sign)
+  if (sign)
     buf[i++] = '-';
 
-  while(--i >= 0)
+  while (--i >= 0)
     consputc(buf[i]);
 }
 
@@ -68,22 +68,22 @@ printf(char *fmt, ...)
   char *s;
 
   locking = pr.locking;
-  if(locking)
+  if (locking)
     acquire(&pr.lock);
 
   if (fmt == 0)
     panic("null fmt");
 
   va_start(ap, fmt);
-  for(i = 0; (c = fmt[i] & 0xff) != 0; i++){
-    if(c != '%'){
+  for (i = 0; (c = fmt[i] & 0xff) != 0; i++) {
+    if (c != '%') {
       consputc(c);
       continue;
     }
     c = fmt[++i] & 0xff;
-    if(c == 0)
+    if (c == 0)
       break;
-    switch(c){
+    switch (c) {
     case 'd':
       printint(va_arg(ap, int), 10, 1);
       break;
@@ -94,9 +94,9 @@ printf(char *fmt, ...)
       printptr(va_arg(ap, uint64));
       break;
     case 's':
-      if((s = va_arg(ap, char*)) == 0)
+      if ((s = va_arg(ap, char *)) == 0)
         s = "(null)";
-      for(; *s; s++)
+      for (; *s; s++)
         consputc(*s);
       break;
     case '%':
@@ -111,7 +111,7 @@ printf(char *fmt, ...)
   }
   va_end(ap);
 
-  if(locking)
+  if (locking)
     release(&pr.lock);
 }
 
@@ -123,7 +123,7 @@ panic(char *s)
   printf(s);
   printf("\n");
   panicked = 1; // freeze uart output from other CPUs
-  for(;;)
+  for (;;)
     ;
 }
 

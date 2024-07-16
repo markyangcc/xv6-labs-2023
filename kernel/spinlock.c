@@ -20,7 +20,7 @@ freelock(struct spinlock *lk)
   acquire(&lock_locks);
   int i;
   for (i = 0; i < NLOCK; i++) {
-    if(locks[i] == lk) {
+    if (locks[i] == lk) {
       locks[i] = 0;
       break;
     }
@@ -29,11 +29,12 @@ freelock(struct spinlock *lk)
 }
 
 static void
-findslot(struct spinlock *lk) {
+findslot(struct spinlock *lk)
+{
   acquire(&lock_locks);
   int i;
   for (i = 0; i < NLOCK; i++) {
-    if(locks[i] == 0) {
+    if (locks[i] == 0) {
       locks[i] = lk;
       release(&lock_locks);
       return;
@@ -53,7 +54,7 @@ initlock(struct spinlock *lk, char *name)
   lk->nts = 0;
   lk->n = 0;
   findslot(lk);
-#endif  
+#endif
 }
 
 // Acquire the lock.
@@ -62,22 +63,22 @@ void
 acquire(struct spinlock *lk)
 {
   push_off(); // disable interrupts to avoid deadlock.
-  if(holding(lk))
+  if (holding(lk))
     panic("acquire");
 
 #ifdef LAB_LOCK
-    __sync_fetch_and_add(&(lk->n), 1);
-#endif      
+  __sync_fetch_and_add(&(lk->n), 1);
+#endif
 
   // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
   //   a5 = 1
   //   s1 = &lk->locked
   //   amoswap.w.aq a5, a5, (s1)
-  while(__sync_lock_test_and_set(&lk->locked, 1) != 0) {
+  while (__sync_lock_test_and_set(&lk->locked, 1) != 0) {
 #ifdef LAB_LOCK
     __sync_fetch_and_add(&(lk->nts), 1);
 #else
-   ;
+    ;
 #endif
   }
 
@@ -95,7 +96,7 @@ acquire(struct spinlock *lk)
 void
 release(struct spinlock *lk)
 {
-  if(!holding(lk))
+  if (!holding(lk))
     panic("release");
 
   lk->cpu = 0;
@@ -140,7 +141,7 @@ push_off(void)
   int old = intr_get();
 
   intr_off();
-  if(mycpu()->noff == 0)
+  if (mycpu()->noff == 0)
     mycpu()->intena = old;
   mycpu()->noff += 1;
 }
@@ -149,18 +150,19 @@ void
 pop_off(void)
 {
   struct cpu *c = mycpu();
-  if(intr_get())
+  if (intr_get())
     panic("pop_off - interruptible");
-  if(c->noff < 1)
+  if (c->noff < 1)
     panic("pop_off");
   c->noff -= 1;
-  if(c->noff == 0 && c->intena)
+  if (c->noff == 0 && c->intena)
     intr_on();
 }
 
 // Read a shared 32-bit value without holding a lock
 int
-atomic_read4(int *addr) {
+atomic_read4(int *addr)
+{
   uint32 val;
   __atomic_load(addr, &val, __ATOMIC_SEQ_CST);
   return val;
@@ -171,7 +173,7 @@ int
 snprint_lock(char *buf, int sz, struct spinlock *lk)
 {
   int n = 0;
-  if(lk->n > 0) {
+  if (lk->n > 0) {
     n = snprintf(buf, sz, "lock: %s: #test-and-set %d #acquire() %d\n",
                  lk->name, lk->nts, lk->n);
   }
@@ -179,39 +181,40 @@ snprint_lock(char *buf, int sz, struct spinlock *lk)
 }
 
 int
-statslock(char *buf, int sz) {
+statslock(char *buf, int sz)
+{
   int n;
   int tot = 0;
 
   acquire(&lock_locks);
   n = snprintf(buf, sz, "--- lock kmem/bcache stats\n");
-  for(int i = 0; i < NLOCK; i++) {
-    if(locks[i] == 0)
+  for (int i = 0; i < NLOCK; i++) {
+    if (locks[i] == 0)
       break;
-    if(strncmp(locks[i]->name, "bcache", strlen("bcache")) == 0 ||
-       strncmp(locks[i]->name, "kmem", strlen("kmem")) == 0) {
+    if (strncmp(locks[i]->name, "bcache", strlen("bcache")) == 0 ||
+        strncmp(locks[i]->name, "kmem", strlen("kmem")) == 0) {
       tot += locks[i]->nts;
-      n += snprint_lock(buf +n, sz-n, locks[i]);
+      n += snprint_lock(buf + n, sz - n, locks[i]);
     }
   }
-  
-  n += snprintf(buf+n, sz-n, "--- top 5 contended locks:\n");
+
+  n += snprintf(buf + n, sz - n, "--- top 5 contended locks:\n");
   int last = 100000000;
   // stupid way to compute top 5 contended locks
-  for(int t = 0; t < 5; t++) {
+  for (int t = 0; t < 5; t++) {
     int top = 0;
-    for(int i = 0; i < NLOCK; i++) {
-      if(locks[i] == 0)
+    for (int i = 0; i < NLOCK; i++) {
+      if (locks[i] == 0)
         break;
-      if(locks[i]->nts > locks[top]->nts && locks[i]->nts < last) {
+      if (locks[i]->nts > locks[top]->nts && locks[i]->nts < last) {
         top = i;
       }
     }
-    n += snprint_lock(buf+n, sz-n, locks[top]);
+    n += snprint_lock(buf + n, sz - n, locks[top]);
     last = locks[top]->nts;
   }
-  n += snprintf(buf+n, sz-n, "tot= %d\n", tot);
-  release(&lock_locks);  
+  n += snprintf(buf + n, sz - n, "tot= %d\n", tot);
+  release(&lock_locks);
   return n;
 }
 #endif
