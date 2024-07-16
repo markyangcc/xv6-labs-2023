@@ -319,6 +319,9 @@ ping:
 	python3 ping.py $(FWDPORT)
 endif
 
+format:
+	find . -regex '.*\.\(c\|h\)' -exec clang-format -style=file -i {} \;
+
 ##
 ##  FOR testing lab grading script
 ##
