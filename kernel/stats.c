@@ -11,59 +11,56 @@
 
 #define BUFSZ 4096
 static struct {
-  struct spinlock lock;
-  char buf[BUFSZ];
-  int sz;
-  int off;
+	struct spinlock lock;
+	char buf[BUFSZ];
+	int sz;
+	int off;
 } stats;
 
-int statscopyin(char*, int);
-int statslock(char*, int);
-  
-int
-statswrite(int user_src, uint64 src, int n)
+int statscopyin(char *, int);
+int statslock(char *, int);
+
+int statswrite(int user_src, uint64 src, int n)
 {
-  return -1;
+	return -1;
 }
 
-int
-statsread(int user_dst, uint64 dst, int n)
+int statsread(int user_dst, uint64 dst, int n)
 {
-  int m;
+	int m;
 
-  acquire(&stats.lock);
+	acquire(&stats.lock);
 
-  if(stats.sz == 0) {
+	if (stats.sz == 0) {
 #ifdef LAB_PGTBL
-    stats.sz = statscopyin(stats.buf, BUFSZ);
+		stats.sz = statscopyin(stats.buf, BUFSZ);
 #endif
 #ifdef LAB_LOCK
-    stats.sz = statslock(stats.buf, BUFSZ);
+		stats.sz = statslock(stats.buf, BUFSZ);
 #endif
-  }
-  m = stats.sz - stats.off;
+	}
+	m = stats.sz - stats.off;
 
-  if (m > 0) {
-    if(m > n)
-      m  = n;
-    if(either_copyout(user_dst, dst, stats.buf+stats.off, m) != -1) {
-      stats.off += m;
-    }
-  } else {
-    m = -1;
-    stats.sz = 0;
-    stats.off = 0;
-  }
-  release(&stats.lock);
-  return m;
+	if (m > 0) {
+		if (m > n)
+			m = n;
+		if (either_copyout(user_dst, dst, stats.buf + stats.off, m) !=
+		    -1) {
+			stats.off += m;
+		}
+	} else {
+		m = -1;
+		stats.sz = 0;
+		stats.off = 0;
+	}
+	release(&stats.lock);
+	return m;
 }
 
-void
-statsinit(void)
+void statsinit(void)
 {
-  initlock(&stats.lock, "stats");
+	initlock(&stats.lock, "stats");
 
-  devsw[STATS].read = statsread;
-  devsw[STATS].write = statswrite;
+	devsw[STATS].read = statsread;
+	devsw[STATS].write = statswrite;
 }
-
