@@ -21,11 +21,15 @@ struct run {
 struct {
 	struct spinlock lock;
 	struct run *freelist;
-} kmem;
+	char name[16];
+} kmem[NCPU];
 
 void kinit()
 {
-	initlock(&kmem.lock, "kmem");
+	for (int i = 0; i < NCPU; i++) {
+		snprintf(kmem[i].name, sizeof(kmem[i].name), "kmem/%s", i);
+		initlock(&kmem[i].lock, kmem[i].name);
+	}
 	freerange(end, (void *)PHYSTOP);
 }
 
@@ -54,10 +58,58 @@ void kfree(void *pa)
 
 	r = (struct run *)pa;
 
-	acquire(&kmem.lock);
-	r->next = kmem.freelist;
-	kmem.freelist = r;
-	release(&kmem.lock);
+	// turn off interrupts when we call cpuid()
+	push_off();
+	int this_cpu = cpuid();
+	pop_off();
+
+	acquire(&kmem[this_cpu].lock);
+	r->next = kmem[this_cpu].freelist;
+	kmem[this_cpu].freelist = r;
+	release(&kmem[this_cpu].lock);
+}
+
+// 寻找链表中点的函数
+// 若链表为奇数长度返回中点，若链表为偶数长度返回上中点
+struct run *middle_list(struct run *head)
+{
+	struct run *fast = head;
+	struct run *slow = head;
+
+	while (fast->next && fast->next->next) {
+		slow = slow->next;
+		fast = fast->next->next;
+	}
+	return slow;
+}
+
+// steal freepage from other cpu's freelist
+struct run *steal_freepage(int this_cpu)
+{
+	struct run *half;
+
+	for (int i = 0; i < NCPU; i++) {
+		if (i == this_cpu) {
+			continue;
+		}
+
+		acquire(&kmem[i].lock);
+		struct run *target_list = kmem[i].freelist;
+
+		// Skip empty list / list only have one freepage
+		if (target_list || target_list->next) {
+			release(&kmem[i].lock);
+			continue;
+		}
+		half = middle_list(target_list);
+
+		kmem[this_cpu].freelist = half->next;
+		half->next = 0;
+
+		release(&kmem[i].lock);
+		return half;
+	}
+	panic("out of memory");
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -67,11 +119,21 @@ void *kalloc(void)
 {
 	struct run *r;
 
-	acquire(&kmem.lock);
-	r = kmem.freelist;
-	if (r)
-		kmem.freelist = r->next;
-	release(&kmem.lock);
+	// turn off interrupts when we call cpuid
+	push_off();
+	int this_cpu = cpuid();
+	pop_off();
+
+	acquire(&kmem[this_cpu].lock);
+	r = kmem[this_cpu].freelist;
+	if (r) {
+		kmem[this_cpu].freelist = r->next;
+	} else {
+		// current list in empty, steal from other cpu's freelist
+		r = steal_freepage(this_cpu);
+	}
+
+	release(&kmem[this_cpu].lock);
 
 	if (r)
 		memset((char *)r, 5, PGSIZE); // fill with junk
